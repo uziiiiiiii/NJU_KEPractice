@@ -30,11 +30,10 @@ def get_contruct_list():
 
 
 def map_WordList_ConstructList(word_list):
-    for word in word_list:
-        if word in construct_list:
+    for word in construct_list:
+        if word == word_list:
             return True
     return False
-    # return True
 
 
 def extraction_start():
@@ -280,7 +279,39 @@ def doc2sent():
         temp_file.writelines(sents)
 
 
+def triple2nt():
+    prefix = ''
+    with open('virtuoso_config.properties', 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.split(' = ')
+            if line[0] == 'tcqaPrefix':
+                prefix = line[1]
+                start = prefix.find('<')
+                prefix = prefix[start:-1]  # 包含<,不包含>
+                break
+    with open('output.txt', 'r', encoding='utf-8') as f, open('data.nt', 'w', encoding='utf-8') as out:
+        triples = []
+        for line in f:
+            s, p, o = line.rstrip('\n')[1:-1].split(', ')
+            if '|' in s:
+                continue
+            if '|' in p:
+                p1, p2 = p.split('|')
+                triples.append((s, p1, o))
+                triples.append((s, p2, o))
+            else:
+                triples.append((s, p, o))
+        for s, p, o in triples:
+            if (map_WordList_ConstructList(o)):
+                out.write(
+                    '%s%s>\t%s%s>\t%s%s>.\n' % (prefix, s, prefix, p, prefix, o))
+            else:
+                out.write(
+                    '%s%s>\t%s%s>\t%s.\n' % (prefix, s, prefix, p, o))
+
+
 if __name__ == "__main__":
     doc2sent()
     get_contruct_list()
     extraction_start()
+    triple2nt()
